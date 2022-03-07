@@ -88,6 +88,7 @@ def check_tokens():
     if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID is not None:
         return True
     else:
+        logger.critical('Отсутствуют обязательные переменные окружения')
         return False
 
 
@@ -109,8 +110,6 @@ def main():
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
             time.sleep(RETRY_TIME)
-        else:
-            logger.critical('Отсутствуют обязательные переменные окружения')
 
 
 if __name__ == '__main__':
