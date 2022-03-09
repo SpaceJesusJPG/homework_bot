@@ -30,6 +30,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.DEBUG
 )
+
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(handler)
@@ -84,28 +85,24 @@ def parse_status(homework):
 def check_tokens():
     """Проверяем наличие всех необходимых токенов для работы бота."""
     tokens = (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)
-    for token in tokens:
-        if token is None:
-            logger.critical('Отсутствуют обязательные переменные окружения')
-            return False
-        else:
-            return True
+    return all(tokens)
 
 
 def main():
     """Основная логика работы бота."""
+    if check_tokens() is False:
+        raise KeyError('Отсутствуют обязательные переменные окружения')
     bot = Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     while True:
         try:
-            if check_tokens() is True:
-                response = get_api_answer(current_timestamp)
-                homeworks = check_response(response)
-                for homework in homeworks:
-                    message = parse_status(homework)
-                    send_message(bot, message)
-                current_timestamp = response.get('current_date')
-                time.sleep(RETRY_TIME)
+            response = get_api_answer(current_timestamp)
+            homeworks = check_response(response)
+            for homework in homeworks:
+                message = parse_status(homework)
+                send_message(bot, message)
+            current_timestamp = response.get('current_date')
+            time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
