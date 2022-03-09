@@ -3,6 +3,7 @@ import os
 import time
 import logging
 import sys
+from http import HTTPStatus
 from types import CodeType
 from dotenv import load_dotenv
 from telegram import Bot
@@ -46,9 +47,9 @@ def get_api_answer(current_timestamp):
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    if response.status_code == 200:
-        response = response
-        return response.json()
+    if response.status_code == HTTPStatus.OK:
+        response = response.json()
+        return response
     else:
         logger.error('Эндпоинт недоступен')
         raise CodeType('Неожиданные ответ от сервера')
@@ -56,23 +57,20 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяем ответ от сервера API на корректность."""
-    if type(response) is dict:
-        if 'homeworks' in response:
-            homeworks = response.get('homeworks')
-            if len(homeworks) == 0:
-                logger.debug('В ответе отсутсвуют новые статусы')
-            if type(homeworks) is list:
-                return homeworks
-            else:
-                raise TypeError(
-                    'Ответ от API под ключем "homeworks" пришел '
-                    'в неожиданном типе'
-                )
-        else:
-            logger.error('Ожидаемые ключи в ответе API отсутствуют')
-            raise KeyError('Ответ API не содержит ключа "homeworks"')
-    else:
+    if type(response) is not dict:
         raise TypeError('Ответ API вернул неожиданные тип данных')
+    if 'homeworks' not in response:
+        logger.error('Ожидаемые ключи в ответе API отсутствуют')
+        raise KeyError('Ответ API не содержит ключа "homeworks"')
+    homeworks = response.get('homeworks')
+    if len(homeworks) == 0:
+        logger.debug('В ответе отсутсвуют новые статусы')
+    if type(homeworks) is not list:
+        raise TypeError(
+            'Ответ от API под ключем "homeworks" пришел '
+            'в неожиданном типе'
+        )
+    return homeworks
 
 
 def parse_status(homework):
@@ -85,11 +83,13 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверяем наличие всех необходимых токенов для работы бота."""
-    if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID is not None:
-        return True
-    else:
-        logger.critical('Отсутствуют обязательные переменные окружения')
-        return False
+    tokens = (PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)
+    for token in tokens:
+        if token is None:
+            logger.critical('Отсутствуют обязательные переменные окружения')
+            return False
+        else:
+            return True
 
 
 def main():
