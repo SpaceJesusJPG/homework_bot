@@ -4,7 +4,6 @@ import time
 import logging
 import sys
 from http import HTTPStatus
-from types import CodeType
 from dotenv import load_dotenv
 from telegram import Bot
 
@@ -54,7 +53,7 @@ def get_api_answer(current_timestamp):
         return response
     else:
         logger.error('Эндпоинт недоступен')
-        raise CodeType('Неожиданные ответ от сервера')
+        raise ConnectionError('Эндпоинт недоступен')
 
 
 def check_response(response):
